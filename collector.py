@@ -56,6 +56,7 @@ time = time.strftime("%Y-%m-%d-%H-%M")
 
 
 
+#### Make the call ####
 class StuHubEventSearch(object):
 	url = 'https://api.stubhub.com/login'
 	inventory_url = 'https://api.stubhub.com/search/inventory/v2'
@@ -71,10 +72,11 @@ class StuHubEventSearch(object):
 		inventory = requests.get(self.inventory_url, headers=HEADERS, params=Data)
 
 
+#### Import the games to track ####
 		tag = None
 		tracks = track.tags
 
-
+#### Collect for each game ####
 		for x in range(len(tracks)):
 			tag = tracks[x]
 			if tag == tracks[x]:
@@ -86,24 +88,34 @@ class StuHubEventSearch(object):
 				HEADERS['Accept-Encoding'] = 'application/json'
 
 				inventory = requests.get(inventory_url, headers=HEADERS, params=data)
+
+				#### Here's the raw JSON return for each game ####
 				inv = inventory.json()
 
+
+				#### Declare some variables of interest from the raw return and setup the loop ####
 				totalTix = inv['totalTickets']
 				totalList = inv['totalListings']
 				eventid = inv['eventId']
 				rows = inv['rows']
 				start = inv['start']
+
+				#### Pass the number of rows, starting listing, etc and run the loop ####
 				listings = self.make_request_to_url(self.inventory_url, rows, start, totalList, tag)
 
 
+				#### Add the snapshot time and organize the JSON by data pull ####
 				for listing in listings:
 					listing['snapshot_time'] = time
 				d = {}
 				d['data_pull'] = {'eventId':eventid, 'snapshot_time':time, 'totalTickets':totalTix, 'aggListings':totalList, 'listings':listings}
 				
-				with open(tag + '.json', 'a') as file:
+
+				#### Dump the organized JSON file ####
+				with open('data/' + tag + '.json', 'a') as file:
 					file.write(json.dumps(d,indent=4))
 
+				#### Create an organized excel file  ####	
 				listing_df = pd.DataFrame(listings)
 				listing_df['current_price'] = listing_df.apply(lambda x: x['currentPrice']['amount'], axis=1)
 				listing_df['listed_price'] = listing_df.apply(lambda x: x['listingPrice']['amount'], axis=1)
@@ -129,18 +141,20 @@ class StuHubEventSearch(object):
 				]
 				final_df = listing_df[my_col]
 
-				if os.path.exists(tag + '.csv'):
-					with open(tag + '.csv', 'a') as f1:
+				if os.path.exists('data/' + tag + '.csv'):
+					with open('data/' + tag + '.csv', 'a') as f1:
 						final_df.to_csv(f1, mode='a', header=False)
 
 				else:
-					with open(tag + '.csv', 'w') as f2:
+					with open('data/' + tag + '.csv', 'w') as f2:
 						final_df.to_csv(f2, header=True)
 
 
 			
 
 	def make_request_to_url(self, url, rows, start, total, tag):
+#### increment the starting point of the listings based on the total number of listings ####
+
 		all_listings = []
 		Data = {
 			'eventid': tag,
