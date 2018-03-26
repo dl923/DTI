@@ -17,7 +17,6 @@ logging.basicConfig(
     level=logging.DEBUG
 )
 
-#### Step 1: # Obtaining StubHub User Access Token ####
 
 #### Credentials #####
 app_token = params.app_token
@@ -114,14 +113,33 @@ class StuHubEventSearch(object):
 				#### Dump the organized JSON file ####
 				with open('data/' + tag + '.json', 'a') as file:
 					file.write(json.dumps(d,indent=4))
+				
 
-				#### Create an organized excel file  ####	
+				#### Get event info from eventinfo.csv ####
+				df = pd.read_csv('eventinfo.csv')
+				df['ID'] = df['ID'].astype(str)
+				event_df= df[df['ID'] == tag]
+				eventID = event_df.iloc[0]['ID']
+				eventTime = event_df.iloc[0]['gameTime']
+				eventhomeTeam = event_df.iloc[0]['homeTeam']
+				eventawayTeam = event_df.iloc[0]['awayTeam']
+
+				for listing in listings:
+					listing['eventTime'] = eventTime
+					listing['homeTeam'] = eventhomeTeam
+					listing['awayTeam'] = eventawayTeam
+					listing['snapshot_time'] = time
+
+				#### Create and organize excel output  ####	
 				listing_df = pd.DataFrame(listings)
 				listing_df['current_price'] = listing_df.apply(lambda x: x['currentPrice']['amount'], axis=1)
 				listing_df['listed_price'] = listing_df.apply(lambda x: x['listingPrice']['amount'], axis=1)
 
 				my_col = [
 					'snapshot_time',
+					'eventTime',
+					'homeTeam',
+					'awayTeam',
 					'listingId',
 					'quantity',						
 					'sectionName',									
