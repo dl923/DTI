@@ -107,13 +107,28 @@ class StuHubEventSearch(object):
 				#### Add the snapshot time and organize the JSON by data pull ####
 				for listing in listings:
 					listing['snapshot_time'] = time
-				d = {}
-				d['data_pull'] = {'eventId':eventid, 'snapshot_time':time, 'totalTickets':totalTix, 'aggListings':totalList, 'listings':listings}
+				#d = {}
+				#d['data_pull'] = {'eventId':eventid, 'snapshot_time':time, 'totalTickets':totalTix, 'aggListings':totalList, 'listings':listings}
 				
 
 				#### Dump the organized JSON file ####
-				with open('/home/ec2-user/collections/' + tag + '.json', 'a') as file:
-					file.write(json.dumps(d,indent=4))
+				#with open('/home/ec2-user/collections/' + tag + '.json', 'a') as file:
+				#	file.write(json.dumps(d,indent=4))
+
+				#### Get event info from eventinfo.csv ####
+				df = pd.read_csv('eventinfo.csv')
+				df['ID'] = df['ID'].astype(str)
+				event_df= df[df['ID'] == tag]
+				eventID = event_df.iloc[0]['ID']
+				eventTime = event_df.iloc[0]['gameTime']
+				eventhomeTeam = event_df.iloc[0]['homeTeam']
+				eventawayTeam = event_df.iloc[0]['awayTeam']
+
+				for listing in listings:
+					listing['eventTime'] = eventTime
+					listing['homeTeam'] = eventhomeTeam
+					listing['awayTeam'] = eventawayTeam
+					listing['snapshot_time'] = time
 
 				#### Create an organized excel file  ####	
 				listing_df = pd.DataFrame(listings)
@@ -122,6 +137,9 @@ class StuHubEventSearch(object):
 
 				my_col = [
 					'snapshot_time',
+					'eventTime',
+					'homeTeam',
+					'awayTeam',
 					'listingId',
 					'quantity',						
 					'sectionName',									
